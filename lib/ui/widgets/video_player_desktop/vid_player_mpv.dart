@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 
@@ -14,12 +15,14 @@ class VideoPlayerMpv extends StatefulWidget {
     required this.audstreams,
     required this.resolutions,
     required this.isCinemaMode,
+    required this.handw,
   });
 
-  final ValueNotifier<bool> isCinemaMode;
   final String url;
   final Map<int, String> audstreams;
   final Map<String, String> resolutions;
+  final ValueNotifier<bool> isCinemaMode;
+  final Map<int, int> handw;
 
   @override
   EventDesktopPlayerState createState() => EventDesktopPlayerState();
@@ -157,11 +160,14 @@ class EventDesktopPlayerState extends State<VideoPlayerMpv> {
   bool _isDownloading = false;
   bool Triggered = false;
   bool isVisible = false;
+  bool Asp       = false;
   String? url;
+
   late List<Media> medias = <Media>[Media(widget.url)];
   late Map<int, String> aud = widget.audstreams;
   late Map<String, String> res = widget.resolutions;
-  
+  late Map<int, int> aspect = widget.handw;
+  late double aspectvalue;
 
     void _downloadAction(String vid) async {
       // default to using the highest bitrate, probably a better way of doing this
@@ -186,6 +192,13 @@ class EventDesktopPlayerState extends State<VideoPlayerMpv> {
 
       setState(() => _isDownloading = false);
       setState(() => Triggered = true);
+      setState(() => Asp = true);
+
+      var aspectlist = aspect.entries.toList();
+      var h = aspectlist[0].key;
+      var w = aspectlist[0].value;
+
+      aspectvalue = h / w;
     }
 
     @override
@@ -199,16 +212,17 @@ class EventDesktopPlayerState extends State<VideoPlayerMpv> {
     @override
   Widget build(BuildContext context) {
 
-    return Material(
-      color: Color.fromARGB(0, 0, 0, 0),
-      child: ConstrainedBox(
-        //TODO: make height customizable, figure out ratio from mpv needs set to proper align with side.
-        constraints: BoxConstraints(maxHeight: 500, maxWidth: 16 / 9 * 500), 
-        child: Triggered == true
+    return //Expanded(
+    AspectRatio(
+      aspectRatio: Asp != true ? 5 / 1 : aspectvalue,
+      child: Flexible(
+       //constraints: BoxConstraints(maxHeight: 300, minHeight: 100),
+        child: 
+        Triggered == true
             ? Stack(
-              //alignment: Alignment.bottomCenter,
+              alignment: Alignment.bottomCenter,
                 children: [
-                    Center(child: Video(controller: controller)),
+                    Video(controller: controller),
                     if(isVisible)
                     Container(
                       child: Align(
@@ -216,9 +230,9 @@ class EventDesktopPlayerState extends State<VideoPlayerMpv> {
                       child: Container(
                         color: Color.fromARGB(125, 0, 0, 0),
                         child: SeekBar(player: player),
+                        )
                       )
-                    )
-                  ),
+                    ),
                   MouseRegion(
                     onEnter: (PointerEvent details)=>setState(()=>isVisible = true),
                     onExit: (PointerEvent details)=>setState(()=>isVisible = false),
@@ -228,7 +242,9 @@ class EventDesktopPlayerState extends State<VideoPlayerMpv> {
               )
             : //Stack(
                 //children: [
-                  Center(
+                  SizedBox(
+                    width: 300,
+                    height: 300,
                     child: //OutlinedButton.icon(
                       //style: OutlinedButton.styleFrom(
                       //  backgroundColor: Theme.of(context).colorScheme.surface,
@@ -251,23 +267,26 @@ class EventDesktopPlayerState extends State<VideoPlayerMpv> {
                           //      //_downloadAction(entry.value); //sends the URL
                           //      return w;
                           //    }).toList()),  
-
+                          //Row(
+                          //children: [
                           SimpleDialog(
-                              title: Text('Resolutions'),
+                              title: Text('aspect'),
                               children: res.entries.map((entry) {
-                                var w = Text(entry.key.toString());
+                                var y = Text(entry.key.toString());
                                 _downloadAction(entry.value); //sends the URL
-                                return w;
-                              }).toList()), //TODO
-                          
+                                return y;
+                              }).toList())
+                            //TODO
+                         // ]
+                          //)
                           //const Icon(Icons.download_outlined),
                             //label: Text("test"),
                             //onPressed: _downloadAction,
                     ),
                   )
                 //],
-    );
-      //);
+    //);
+      );
 
   }
 }
